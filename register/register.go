@@ -12,7 +12,7 @@ import (
 	"github.com/RavenHuo/go-kit/etcd_client"
 	"github.com/RavenHuo/go-kit/log"
 	"github.com/RavenHuo/go-kit/utils/nets"
-	grpc2 "github.com/RavenHuo/grpc"
+	"github.com/RavenHuo/grpc/instance"
 	"github.com/RavenHuo/grpc/options"
 	"github.com/coreos/etcd/clientv3"
 	"os"
@@ -21,31 +21,33 @@ import (
 
 // 服务注册
 type Register struct {
-	serverInfo  *grpc2.ServerInfo
-	option      *options.RegisterOptions
-	closeCh     chan struct{}
-	leasesID    clientv3.LeaseID
-	logger      log.ILogger
-	etcdClient  *etcd_client.Client
-	keepAliveCh <-chan *clientv3.LeaseKeepAliveResponse
+	serverInfo *instance.ServerInfo
+	option     *options.GrpcOptions
+	leasesID   clientv3.LeaseID
+	logger     log.ILogger
+	etcdClient *etcd_client.Client
+	closeCh    chan struct{}
 }
 
-func NewRegister(registerOptions *options.RegisterOptions, logger log.ILogger) *Register {
+func NewRegister(registerOptions *options.GrpcOptions, logger log.ILogger) (*Register, error) {
 	if registerOptions == nil || logger == nil {
 		panic("NewRegister failed option or serverInfo is empty")
 	}
-	return &Register{
-		option: registerOptions,
-		logger: logger,
+	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: registerOptions.Endpoints()}, logger)
+	if err != nil {
+		logger.Errorf(context.Background(), "grpc register server init etcd client endpoints:%+v, err:%s", registerOptions.Endpoints(), err)
+		return nil, err
 	}
+	return &Register{
+		option:     registerOptions,
+		logger:     logger,
+		etcdClient: etcdClient,
+		closeCh:    make(chan struct{}),
+	}, nil
 }
 
-func (r *Register) Register(info *grpc2.ServerInfo) error {
-	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: r.option.Endpoints()}, r.logger)
-	if err != nil {
-		r.logger.Errorf(context.Background(), "grpc register server init etcd client endpoints:%+v, err:%s", r.option.Endpoints(), err)
-		return err
-	}
+func (r *Register) Register(info *instance.ServerInfo) error {
+
 	if info.Addr == "" {
 		info.Addr = getLocalIpAddr()
 	}
@@ -53,8 +55,7 @@ func (r *Register) Register(info *grpc2.ServerInfo) error {
 		return errors.New("")
 	}
 	r.serverInfo = info
-	r.etcdClient = etcdClient
-	err = r.register(info)
+	err := r.register(info)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,8 @@ func (r *Register) Unregister() error {
 	return nil
 }
 
-func (r *Register) register(info *grpc2.ServerInfo) error {
+func (r *Register) register(info *instance.ServerInfo) error {
+	info.Key = info.BuildPath()
 	jsonInfo, _ := json.Marshal(info)
 	if _, err := r.etcdClient.PutKey(info.BuildPath(), string(jsonInfo), r.option.KeepAliveTtl()); err != nil {
 		r.logger.Errorf(context.Background(), "server register failed serverInfo:%+v, err:%s", info, err)

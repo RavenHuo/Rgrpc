@@ -11,6 +11,8 @@ github.com/RavenHuo/go-kit v0.0.0-20220830083653-59a69e1fe372 h1:lqy+heh14RWehYt
 github.com/RavenHuo/go-kit v0.0.0-20220830083653-59a69e1fe372/go.mod h1:pTu9oguXVW5XGISe9VPbDktFa3Jj+oxpjicLztwCiqk=
 github.com/RavenHuo/go-kit v0.0.0-20220831062855-57c91c97a4f5 h1:KzAG1ad9oAa/V7vhUdGU9zUA070UirnaMJCmNeX3pG8=
 github.com/RavenHuo/go-kit v0.0.0-20220831062855-57c91c97a4f5/go.mod h1:pTu9oguXVW5XGISe9VPbDktFa3Jj+oxpjicLztwCiqk=
+github.com/RavenHuo/go-kit v0.0.0-20220901103501-42019869ee16 h1:Wnp8sFdbpuyQz9MG3KnqnNasFmZz8RVXGLO8/3ULXzc=
+github.com/RavenHuo/go-kit v0.0.0-20220901103501-42019869ee16/go.mod h1:pTu9oguXVW5XGISe9VPbDktFa3Jj+oxpjicLztwCiqk=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/etcd v3.3.22+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
