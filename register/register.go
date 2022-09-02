@@ -52,7 +52,7 @@ func (r *Register) Register(info *instance.ServerInfo) error {
 		info.Addr = getLocalIpAddr()
 	}
 	if info.Addr == "" || info.Port == 0 {
-		return errors.New("")
+		return errors.New("register info must not empty")
 	}
 	r.serverInfo = info
 	err := r.register(info)
@@ -65,7 +65,7 @@ func (r *Register) Register(info *instance.ServerInfo) error {
 }
 
 func (r *Register) Unregister() error {
-	if r.etcdClient == nil {
+	if r.etcdClient == nil || r.serverInfo == nil {
 		return nil
 	}
 	r.closeCh <- struct{}{}

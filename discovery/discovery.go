@@ -45,9 +45,10 @@ func NewDiscovery(option *options.GrpcOptions, logger log.ILogger) (*Discovery, 
 }
 
 func (d *Discovery) Listen(serverName string) error {
-	d.rwMutex.Lock()
-	if d.etcdClient == nil {
+	if serverName == "" {
+		return errors.New("listen failed serverName must not empty")
 	}
+	d.rwMutex.Lock()
 	if _, ok := d.serversMap[serverName]; ok {
 		d.rwMutex.Unlock()
 		return errors.New(fmt.Sprintf("server %s has been listen", serverName))
