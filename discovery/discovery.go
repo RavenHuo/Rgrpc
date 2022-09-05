@@ -28,14 +28,15 @@ type Discovery struct {
 	logger     log.ILogger
 }
 
-func NewDiscovery(option *options.GrpcOptions, logger log.ILogger) (*Discovery, error) {
-	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: option.Endpoints()}, logger)
+func NewDiscovery(logger log.ILogger, option ...options.GrpcOption) (*Discovery, error) {
+	defaultOptions := options.DefaultRegisterOption(option...)
+	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: defaultOptions.Endpoints()}, logger)
 	if err != nil {
-		logger.Errorf(context.Background(), "grpc register server init etcd client endpoints:%+v, err:%s", option.Endpoints(), err)
+		logger.Errorf(context.Background(), "grpc register server init etcd pb endpoints:%+v, err:%s", defaultOptions.Endpoints(), err)
 		return nil, err
 	}
 	return &Discovery{
-		option:     option,
+		option:     defaultOptions,
 		serversMap: make(map[string][]*instance.ServerInfo, 0),
 		rwMutex:    sync.RWMutex{},
 		logger:     logger,
@@ -123,7 +124,7 @@ func (d *Discovery) listen(serverName string) ([]*instance.ServerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*instance.ServerInfo, len(resp))
+	result := make([]*instance.ServerInfo, 0, len(resp))
 	for _, v := range resp {
 		var serverInfo instance.ServerInfo
 		err := json.Unmarshal(v, &serverInfo)

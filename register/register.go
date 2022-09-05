@@ -29,13 +29,11 @@ type Register struct {
 	closeCh    chan struct{}
 }
 
-func NewRegister(registerOptions *options.GrpcOptions, logger log.ILogger) (*Register, error) {
-	if registerOptions == nil || logger == nil {
-		panic("NewRegister failed option or serverInfo is empty")
-	}
+func NewRegister(logger log.ILogger, opts ...options.GrpcOption) (*Register, error) {
+	registerOptions := options.DefaultRegisterOption(opts...)
 	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: registerOptions.Endpoints()}, logger)
 	if err != nil {
-		logger.Errorf(context.Background(), "grpc register server init etcd client endpoints:%+v, err:%s", registerOptions.Endpoints(), err)
+		logger.Errorf(context.Background(), "grpc register server init etcd pb endpoints:%+v, err:%s", registerOptions.Endpoints(), err)
 		return nil, err
 	}
 	return &Register{
@@ -59,6 +57,7 @@ func (r *Register) Register(info *instance.ServerInfo) error {
 	if err != nil {
 		return err
 	}
+	r.logger.Infof(context.Background(), "register server success  info :%+v ", info)
 	go r.keepAlive()
 
 	return nil
