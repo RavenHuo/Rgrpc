@@ -156,6 +156,9 @@ func (s *GrpcResolverBuilder) keepAliveListen() () {
 					}
 				}
 			}
+		// close
+		case <-s.closeCh:
+			return
 		}
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 )
+
 // 自己实现的服务发现
 type Discovery struct {
 	option     *options.GrpcOptions
@@ -114,6 +115,8 @@ func (d *Discovery) keepAliveListen(serverName string) {
 					}
 				}
 			}
+		case <-d.closeCh:
+			return
 		}
 	}
 }

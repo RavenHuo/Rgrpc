@@ -35,10 +35,10 @@ type Resolver interface {
 }
 ```
 
-Resolver接口是一个解析器，是服务发现返回的obj
+Resolver接口是一个解析器，是服务发现返回的obj,因为接口需要返回这个通用对象。所以这个Resolver的Close()方法才是最重要的。
 
 - ResolveNow，需要发现的服务选项
-- 关闭服务发现
+- Close() 关闭服务发现
 
 
 
