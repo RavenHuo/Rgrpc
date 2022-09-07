@@ -5,7 +5,10 @@
  **/
 package instance
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 const (
 	etcdKeyNamePrefix = "/grpc/%s"
@@ -22,6 +25,10 @@ type ServerInfo struct {
 
 func (info *ServerInfo) BuildPath() string {
 	return fmt.Sprintf(etcdKeyNameFormat, info.Name, info.Addr, info.Port)
+}
+
+func (info *ServerInfo) FullAddress() string {
+	return info.Addr + ":" + strconv.Itoa(info.Port)
 }
 
 func BuildServerPrefix(serverName string) string {

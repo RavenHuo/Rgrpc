@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 )
-
+// 自己实现的服务发现
 type Discovery struct {
 	option     *options.GrpcOptions
 	serversMap map[string][]*instance.ServerInfo
@@ -47,17 +47,17 @@ func NewDiscovery(logger log.ILogger, option ...options.GrpcOption) (*Discovery,
 
 func (d *Discovery) Listen(serverName string) error {
 	if serverName == "" {
-		return errors.New("listen failed serverName must not empty")
+		return errors.New("listenServerInfo failed serverName must not empty")
 	}
 	d.rwMutex.Lock()
 	if _, ok := d.serversMap[serverName]; ok {
 		d.rwMutex.Unlock()
-		return errors.New(fmt.Sprintf("server %s has been listen", serverName))
+		return errors.New(fmt.Sprintf("server %s has been listenServerInfo", serverName))
 	}
 	d.rwMutex.Unlock()
 
 	d.serversMap[serverName] = make([]*instance.ServerInfo, 0)
-	serverInfoList, err := d.listen(serverName)
+	serverInfoList, err := d.listenServerInfo(serverName)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (d *Discovery) keepAliveListen(serverName string) {
 		select {
 		// timer update serverMap
 		case <-timer.C:
-			serverInfoList, err := d.listen(serverName)
+			serverInfoList, err := d.listenServerInfo(serverName)
 			if err == nil {
 				d.updateServerInfo(serverName, serverInfoList)
 			}
@@ -94,7 +94,7 @@ func (d *Discovery) keepAliveListen(serverName string) {
 			var serverInfo instance.ServerInfo
 			err := json.Unmarshal(kv.Value, &serverInfo)
 			if err != nil {
-				d.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+				d.logger.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
 			} else {
 				serverInfoList := d.ListServerInfo(serverName)
 				if e.Type == mvccpb.PUT {
@@ -118,7 +118,7 @@ func (d *Discovery) keepAliveListen(serverName string) {
 	}
 }
 
-func (d *Discovery) listen(serverName string) ([]*instance.ServerInfo, error) {
+func (d *Discovery) listenServerInfo(serverName string) ([]*instance.ServerInfo, error) {
 	prefix := instance.BuildServerPrefix(serverName)
 	resp, err := d.etcdClient.GetDirectory(context.Background(), prefix)
 	if err != nil {
@@ -129,7 +129,7 @@ func (d *Discovery) listen(serverName string) ([]*instance.ServerInfo, error) {
 		var serverInfo instance.ServerInfo
 		err := json.Unmarshal(v, &serverInfo)
 		if err != nil {
-			d.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, v, err)
+			d.logger.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, v, err)
 		} else {
 			result = append(result, &serverInfo)
 		}

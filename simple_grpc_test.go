@@ -54,7 +54,7 @@ func TestResolver(t *testing.T) {
 	// 进行十次数据请求
 	for i := 0; i < 20; i++ {
 		serverInfo := serverList[i%6]
-		conn, err := grpc.Dial(serverInfo.Addr+":"+strconv.Itoa(serverInfo.Port), grpc.WithInsecure(), grpc.WithBalancerName(roundrobin.Name))
+		conn, err := grpc.Dial(serverInfo.FullAddress(), grpc.WithInsecure(), grpc.WithBalancerName(roundrobin.Name))
 		c := pb.NewGreeterClient(conn)
 		if err != nil {
 			t.Fatalf("failed to dial %v", err)
@@ -65,7 +65,7 @@ func TestResolver(t *testing.T) {
 		if err != nil {
 			t.Fatalf("say hello failed %v", err)
 		}
-		defaultLogger.Infof(ctx,"grpc request success resp:%s", resp.Message)
+		defaultLogger.Infof(ctx, "grpc request success resp:%s", resp.Message)
 		time.Sleep(100 * time.Millisecond)
 	}
 
