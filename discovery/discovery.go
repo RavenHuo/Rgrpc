@@ -92,29 +92,30 @@ func (d *Discovery) keepAliveListen(serverName string) {
 		// watch etcd prefix when update key
 		case e := <-watchChan:
 			kv := e.Kv
-			var serverInfo instance.ServerInfo
-			err := json.Unmarshal(kv.Value, &serverInfo)
-			if err != nil {
-				d.logger.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+			serverInfoList := d.ListServerInfo(serverName)
+			
+			if e.Type == mvccpb.PUT {
+				var serverInfo instance.ServerInfo
+				err := json.Unmarshal(kv.Value, &serverInfo)
+				if err != nil {
+					d.logger.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+				}
+				serverInfoList = append(serverInfoList, &serverInfo)
+				d.updateServerInfo(serverName, serverInfoList)
 			} else {
-				serverInfoList := d.ListServerInfo(serverName)
-				if e.Type == mvccpb.PUT {
-					serverInfoList = append(serverInfoList, &serverInfo)
-					d.updateServerInfo(serverName, serverInfoList)
-				} else {
-					index := -1
-					for i, s := range serverInfoList {
-						if s.Key == string(kv.Key) {
-							index = i
-						}
-					}
-					if index != -1 {
-						// remove serverInfo in serverInfoList
-						serverInfoList = append(serverInfoList[:index], serverInfoList[index+1:]...)
-						d.updateServerInfo(serverName, serverInfoList)
+				index := -1
+				for i, s := range serverInfoList {
+					if s.Key == string(kv.Key) {
+						index = i
 					}
 				}
+				if index != -1 {
+					// remove serverInfo in serverInfoList
+					serverInfoList = append(serverInfoList[:index], serverInfoList[index+1:]...)
+					d.updateServerInfo(serverName, serverInfoList)
+				}
 			}
+
 		case <-d.closeCh:
 			return
 		}

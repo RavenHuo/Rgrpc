@@ -35,7 +35,6 @@ type grpcResolverBuilder struct {
 
 // impl Resolver resolver/resolver.go:248
 func (s *grpcResolverBuilder) ResolveNow(nowOptions resolver.ResolveNowOptions) {
-	s.logger.Infof(context.Background(), "ResolveNow req:%+v", nowOptions)
 }
 
 // impl Resolver resolver/resolver.go:248
@@ -119,7 +118,7 @@ func (s *grpcResolverBuilder) listenServerInfo() ([]*instance.ServerInfo, error)
 	return result, nil
 }
 
-func (s *grpcResolverBuilder) keepAliveListen() () {
+func (s *grpcResolverBuilder) keepAliveListen() {
 	timer := time.NewTimer(time.Duration(s.option.KeepAliveTtl()) * time.Second)
 	prefix := instance.BuildServerPrefix(s.serverName)
 	watchChan, err := s.etcdClient.WatchPrefix(context.Background(), prefix)
@@ -138,29 +137,30 @@ func (s *grpcResolverBuilder) keepAliveListen() () {
 		// watch etcd prefix when update key
 		case e := <-watchChan:
 			kv := e.Kv
-			var serverInfo instance.ServerInfo
-			err := json.Unmarshal(kv.Value, &serverInfo)
-			if err != nil {
-				s.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+			serverInfoList := s.listServerInfo()
+			if e.Type == mvccpb.PUT {
+				var serverInfo instance.ServerInfo
+				err := json.Unmarshal(kv.Value, &serverInfo)
+				if err != nil {
+					s.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+					continue
+				}
+				serverInfoList = append(serverInfoList, &serverInfo)
+				s.update(serverInfoList)
 			} else {
-				serverInfoList := s.listServerInfo()
-				if e.Type == mvccpb.PUT {
-					serverInfoList = append(serverInfoList, &serverInfo)
-					s.update(serverInfoList)
-				} else {
-					index := -1
-					for i, s := range serverInfoList {
-						if s.Key == string(kv.Key) {
-							index = i
-						}
-					}
-					if index != -1 {
-						// remove serverInfo in serverInfoList
-						serverInfoList = append(serverInfoList[:index], serverInfoList[index+1:]...)
-						s.update(serverInfoList)
+				index := -1
+				for i, s := range serverInfoList {
+					if s.Key == string(kv.Key) {
+						index = i
 					}
 				}
+				if index != -1 {
+					// remove serverInfo in serverInfoList
+					serverInfoList = append(serverInfoList[:index], serverInfoList[index+1:]...)
+					s.update(serverInfoList)
+				}
 			}
+
 		// close
 		case <-s.closeCh:
 			return
