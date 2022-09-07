@@ -27,6 +27,7 @@ var registerOption = []options.GrpcOption{
 	options.WithKeepAliveTtl(10),
 }
 var serverName = "hello-service"
+
 var ctx = context.Background()
 
 var defaultLogger = log.Logger{}

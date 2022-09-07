@@ -65,7 +65,7 @@ type Builder interface {
 
 builder是一个grpc框架暴露出来的服务发现接口
 
-- Scheme() 方法返回的是服务的名字。
+- Scheme() 方法返回的是服务的名字。需要跟grpc.Dial()方法的前缀匹配
 - Buiild()方法，最终通过修改cc resolver.ClientConn的状态来变更链接情况。
 
 然后使用 resolver.Register() 方法将builder注册到grpc中
