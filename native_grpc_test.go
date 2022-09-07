@@ -31,7 +31,7 @@ var ctx = context.Background()
 
 var defaultLogger = log.Logger{}
 
-func TestResolver(t *testing.T) {
+func TestDiscovery(t *testing.T) {
 	// etcd中注册5个服务
 	go newServer(serverName, 1000)
 	go newServer(serverName, 1001)

@@ -186,5 +186,6 @@ func (s *GrpcResolverBuilder) updateState() {
 			Attributes: attributes.New(serverInfo.MateData),
 		})
 	}
+	state.Addresses = address
 	s.cc.UpdateState(state)
 }
