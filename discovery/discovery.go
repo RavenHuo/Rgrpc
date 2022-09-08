@@ -93,7 +93,7 @@ func (d *Discovery) keepAliveListen(serverName string) {
 		case e := <-watchChan:
 			kv := e.Kv
 			serverInfoList := d.ListServerInfo(serverName)
-			
+
 			if e.Type == mvccpb.PUT {
 				var serverInfo instance.ServerInfo
 				err := json.Unmarshal(kv.Value, &serverInfo)

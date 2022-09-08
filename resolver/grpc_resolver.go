@@ -131,6 +131,7 @@ func (s *grpcResolverBuilder) keepAliveListen() {
 		// timer update serverMap
 		case <-timer.C:
 			serverInfoList, err := s.listenServerInfo()
+			s.logger.Infof(context.Background(), "heartbeat to listen etcd serverName:%s", s.serverName)
 			if err == nil {
 				s.update(serverInfoList)
 			}

@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-var etcdAddrs = []string{"hw-sg-nono-test1.livenono.com:2379"}
+var etcdAddrs = []string{"127.0.0.1:2379"}
 var registerOption = []options.GrpcOption{
 	options.WithEndpoints(etcdAddrs),
 	options.WithKeepAliveTtl(10),

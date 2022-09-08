@@ -65,68 +65,10 @@ type Builder interface {
 
 builder是一个grpc框架暴露出来的服务发现接口
 
-- Scheme() 方法返回的是服务的名字。需要跟grpc.Dial()方法的前缀匹配
-- Buiild()方法，最终通过修改cc resolver.ClientConn 来修改服务调用地址。
+- Scheme() 方法返回的是使用的模式。需要跟grpc.Dial()方法的前缀匹配
+- Buiild()方法是最关键的方法。
+  - cc ClientConn（grpc链接情况），最终通过cc.UpdateState来修改服务调用地址
+  - target Target（需要调用的远程服务名字），它是从用户传递给 Dial 或 DialContext 的目标字符串中解析出来的。 grpc 将其传递给解析器和平衡器。target.Endpoint 就是这个服务的名字
 
 然后使用 resolver.Register() 方法将builder注册到grpc中
 
-### Builder实现
-
-我们来看看 Builder 接口的具体实现
-
-```go
-type baseBuilder struct {
-    name string
-    reg  registry.Registry
-}
-
-// Build ...
-func (b *baseBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
-    endpoints, err := b.reg.WatchServices(context.Background(), target.Endpoint, "grpc")
-    if err != nil {
-        return nil, err
-    }
-
-    var stop = make(chan struct{})
-    xgo.Go(func() {
-        for {
-            select {
-            case endpoint := <-endpoints:
-                var state = resolver.State{
-                    Addresses: make([]resolver.Address, 0),
-                      ...
-                }
-                for _, node := range endpoint.Nodes {
-                    ...
-                    state.Addresses = append(state.Addresses, address)
-                }
-                cc.UpdateState(state)
-            case <-stop:
-                return
-            }
-        }
-    })
-
-    return &baseResolver{
-        stop: stop,
-    }, nil
-}
-```
-
-这里Build 方法主要是通过 Registry 模块获得监控服务通道，然后将更新的服务信息再更新到 grpcClient 中去，保证 grpcClient 的负载均衡器的服务地址永远都是最新的。
-
-如何将Builder的具体实现注册到 grpc 中。
-
-```go
-import "google.golang.org/grpc/resolver"
-
-// Register ...
-func Register(name string, reg registry.Registry) {
-    resolver.Register(&baseBuilder{
-        name: name,
-        reg:  reg,
-    })
-}
-```
-
-将 Registry模块注入到 Builder 对象中，然后注入到 grpc 的 resolver 模块中去。这样 grpcClient 在实际运行中就会调用 etcd 的服务发现功能了。
