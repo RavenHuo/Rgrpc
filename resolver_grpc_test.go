@@ -16,6 +16,7 @@ import (
 )
 
 func TestResolver(t *testing.T) {
+	// 注册服务发现组件
 	grpcResolverBuilder := resolver.MustBuildSimpleBuilder("etcd", defaultLogger, registerOption...)
 	resolver.Register(grpcResolverBuilder)
 
