@@ -14,7 +14,6 @@ import (
 	"github.com/RavenHuo/go-kit/utils/nets"
 	"github.com/RavenHuo/grpc/instance"
 	"github.com/RavenHuo/grpc/options"
-	"github.com/coreos/etcd/clientv3"
 	"os"
 	"time"
 )
@@ -23,7 +22,6 @@ import (
 type Register struct {
 	serverInfo *instance.ServerInfo
 	option     *options.GrpcOptions
-	leasesID   clientv3.LeaseID
 	logger     log.ILogger
 	etcdClient *etcd_client.Client
 	closeCh    chan struct{}

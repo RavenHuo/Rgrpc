@@ -408,6 +408,10 @@ func (cc *ClientConn) applyServiceConfigAndBalancer(sc *ServiceConfig, addrs []r
 
 ## 2、负载均衡
 
+https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
+
+grpc支持两种默认的负载均衡策略 `pick_first` 和`round_robin`，`grpclb`（已弃用）
+
 
 
 ![img](https://s2.loli.net/2022/09/09/wTm9dFaubMjtpZo.jpg)

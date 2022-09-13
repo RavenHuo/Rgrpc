@@ -13,6 +13,7 @@ import (
 const (
 	etcdKeyNamePrefix = "/grpc/%s"
 	etcdKeyNameFormat = etcdKeyNamePrefix + "/%s:%d"
+	version           = "version"
 )
 
 type ServerInfo struct {
@@ -29,6 +30,10 @@ func (info *ServerInfo) BuildPath() string {
 
 func (info *ServerInfo) FullAddress() string {
 	return info.Addr + ":" + strconv.Itoa(info.Port)
+}
+
+func (info *ServerInfo) Version() string {
+	return info.MateData[version].(string)
 }
 
 func BuildServerPrefix(serverName string) string {

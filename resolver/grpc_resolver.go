@@ -12,7 +12,8 @@ import (
 	"github.com/RavenHuo/go-kit/log"
 	"github.com/RavenHuo/grpc/instance"
 	"github.com/RavenHuo/grpc/options"
-	"github.com/coreos/etcd/mvcc/mvccpb"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+
 	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/resolver"
 	"sync"

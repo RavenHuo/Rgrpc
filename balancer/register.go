@@ -5,6 +5,8 @@
  **/
 package balancer
 
-func Register()  {
-	
+import "google.golang.org/grpc/balancer"
+
+func Register(balanceBuilder GrpcBalancerBuilder) {
+	balancer.Register(balanceBuilder)
 }
