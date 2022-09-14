@@ -5,7 +5,6 @@ go 1.16
 require (
 	github.com/RavenHuo/go-kit v0.0.0-20220914091447-047a3a4a530b
 	github.com/golang/protobuf v1.5.2
-	github.com/wxnacy/wgo v1.0.4 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.0
 	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b // indirect
 	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261 // indirect
