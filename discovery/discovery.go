@@ -75,7 +75,7 @@ func (d *Discovery) updateServerInfo(serverName string, serverInfo []*instance.S
 
 func (d *Discovery) keepAliveListen(serverName string) {
 	timer := time.NewTimer(time.Duration(d.option.KeepAliveTtl()) * time.Second)
-	prefix := instance.BuildServerPrefix(serverName)
+	prefix := instance.GetServerPrefix(serverName)
 	watchChan, err := d.etcdClient.WatchPrefix(context.Background(), prefix)
 	if err != nil {
 		d.logger.Errorf(context.Background(), "watch %s err:%s", prefix, err)
@@ -123,7 +123,7 @@ func (d *Discovery) keepAliveListen(serverName string) {
 }
 
 func (d *Discovery) listenServerInfo(serverName string) ([]*instance.ServerInfo, error) {
-	prefix := instance.BuildServerPrefix(serverName)
+	prefix := instance.GetServerPrefix(serverName)
 	resp, err := d.etcdClient.GetDirectory(context.Background(), prefix)
 	if err != nil {
 		return nil, err

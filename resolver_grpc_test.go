@@ -28,7 +28,7 @@ func TestResolver(t *testing.T) {
 	go newServer(serverName, 1004)
 	go newServer(serverName, 1005)
 	time.Sleep(2 * time.Second)
-
+	// 轮询的调用
 	conn, err := grpc.Dial("etcd:///"+serverName, grpc.WithInsecure(), grpc.WithBalancerName(roundrobin.Name))
 	if err != nil {
 		t.Fatalf("failed to dial %v", err)
@@ -45,6 +45,5 @@ func TestResolver(t *testing.T) {
 		defaultLogger.Infof(ctx, "grpc request success resp:%s", resp.Message)
 		time.Sleep(100 * time.Millisecond)
 	}
-
-	time.Sleep(2 * time.Second)
+	time.Sleep(30*time.Second)
 }
