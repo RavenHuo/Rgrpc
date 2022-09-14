@@ -43,3 +43,6 @@ func (r *GrpcOptions) Endpoints() []string {
 func (r *GrpcOptions) KeepAliveTtl() int {
 	return r.keepAliveTtl
 }
+func (r *GrpcOptions) LeaseTimestamp() int {
+	return 2 * r.keepAliveTtl
+}

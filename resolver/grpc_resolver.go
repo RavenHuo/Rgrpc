@@ -13,25 +13,23 @@ import (
 	"github.com/RavenHuo/grpc/instance"
 	"github.com/RavenHuo/grpc/options"
 	"go.etcd.io/etcd/api/v3/mvccpb"
-
-	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/resolver"
 	"sync"
-	"time"
 )
 
 type grpcResolverBuilder struct {
 	// 服务名
 	serverName string
 	// 模式
-	schema         string
-	option         *options.GrpcOptions
-	etcdClient     *etcd_client.Client
-	logger         log.ILogger
-	closeCh        chan struct{}
-	cc             resolver.ClientConn
-	serverInfoList []*instance.ServerInfo
-	rwMutex        sync.RWMutex
+	schema        string
+	option        *options.GrpcOptions
+	etcdClient    *etcd_client.Client
+	logger        log.ILogger
+	closeCh       chan struct{}
+	cc            resolver.ClientConn
+	serverInfoSet map[string]*instance.ServerInfo
+	// 更新的时候用锁来防止并发来更新
+	mutex sync.Mutex
 }
 
 // impl Resolver resolver/resolver.go:248
@@ -46,10 +44,12 @@ func (s *grpcResolverBuilder) Close() {
 func newSimpleBuilder(schema string, logger log.ILogger, option ...options.GrpcOption) (*grpcResolverBuilder, error) {
 	defaultOptions := options.DefaultRegisterOption(option...)
 	return &grpcResolverBuilder{
-		schema:  schema,
-		option:  defaultOptions,
-		logger:  logger,
-		rwMutex: sync.RWMutex{},
+		schema: schema,
+
+		option: defaultOptions,
+		logger: logger,
+		closeCh: make(chan struct{}),
+		mutex:  sync.Mutex{},
 	}, nil
 }
 
@@ -66,11 +66,14 @@ func (s *grpcResolverBuilder) Build(target resolver.Target, cc resolver.ClientCo
 
 	s.cc = cc
 	s.etcdClient = etcdClient
+	s.serverInfoSet = make(map[string]*instance.ServerInfo, 0)
 	err = s.listen()
 	if err != nil {
 		s.logger.Errorf(context.Background(), "ResolverBuilder listen failed err:%s", err)
 		return nil, err
 	}
+	// keepAlive heartbeat and watch etcd key
+	go s.keepAliveListen()
 	return s, nil
 }
 
@@ -90,29 +93,33 @@ func MustBuildSimpleBuilder(schema string, logger log.ILogger, option ...options
 }
 
 func (s *grpcResolverBuilder) listen() error {
-	serverIndoList, err := s.listenServerInfo()
+	serverInfoList, err := s.listenServerInfo()
 	if err != nil {
 		return err
 	}
-	s.update(serverIndoList)
-	// keepAlive heartbeat and watch etcd key
-	go s.keepAliveListen()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	for _, serverInfo := range serverInfoList {
+		s.serverInfoSet[serverInfo.Key] = serverInfo
+	}
+	s.update()
 	return nil
 }
 
 func (s *grpcResolverBuilder) listenServerInfo() ([]*instance.ServerInfo, error) {
-	prefix := instance.BuildServerPrefix(s.serverName)
+	prefix := instance.GetServerPrefix(s.serverName)
 	resp, err := s.etcdClient.GetDirectory(context.Background(), prefix)
 	if err != nil {
 		return nil, err
 	}
 	result := make([]*instance.ServerInfo, 0, len(resp))
-	for _, v := range resp {
+	for k, v := range resp {
 		var serverInfo instance.ServerInfo
 		err := json.Unmarshal(v, &serverInfo)
 		if err != nil {
 			s.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, v, err)
 		} else {
+			serverInfo.Key = k
 			result = append(result, &serverInfo)
 		}
 	}
@@ -120,8 +127,7 @@ func (s *grpcResolverBuilder) listenServerInfo() ([]*instance.ServerInfo, error)
 }
 
 func (s *grpcResolverBuilder) keepAliveListen() {
-	timer := time.NewTimer(time.Duration(s.option.KeepAliveTtl()) * time.Second)
-	prefix := instance.BuildServerPrefix(s.serverName)
+	prefix := instance.GetServerPrefix(s.serverName)
 	watchChan, err := s.etcdClient.WatchPrefix(context.Background(), prefix)
 	if err != nil {
 		s.logger.Errorf(context.Background(), "watch %s err:%s", prefix, err)
@@ -129,79 +135,50 @@ func (s *grpcResolverBuilder) keepAliveListen() {
 
 	for {
 		select {
-		// timer update serverMap
-		case <-timer.C:
-			serverInfoList, err := s.listenServerInfo()
-			s.logger.Infof(context.Background(), "heartbeat to listen etcd serverName:%s", s.serverName)
-			if err == nil {
-				s.update(serverInfoList)
-			}
 		// watch etcd prefix when update key
 		case e := <-watchChan:
-			kv := e.Kv
-			serverInfoList := s.listServerInfo()
-			if e.Type == mvccpb.PUT {
-				var serverInfo instance.ServerInfo
-				err := json.Unmarshal(kv.Value, &serverInfo)
-				if err != nil {
-					s.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
-					continue
-				}
-				serverInfoList = append(serverInfoList, &serverInfo)
-				s.update(serverInfoList)
-			} else {
-				index := -1
-				for i, s := range serverInfoList {
-					if s.Key == string(kv.Key) {
-						index = i
+			func(e *etcd_client.Event) {
+				s.mutex.Lock()
+				defer s.mutex.Unlock()
+				kv := e.Kv
+				serverInfoList := s.serverInfoSet
+				if e.Type == mvccpb.PUT {
+					var serverInfo instance.ServerInfo
+					err := json.Unmarshal(kv.Value, &serverInfo)
+					if err != nil {
+						s.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+						return
 					}
-				}
-				if index != -1 {
-					// remove serverInfo in serverInfoList
-					serverInfoList = append(serverInfoList[:index], serverInfoList[index+1:]...)
-					s.update(serverInfoList)
-				}
-			}
+					serverInfoList[string(kv.Key)] = &serverInfo
+					s.update()
+				} else {
+					// remove serverInfo in serverInfoSet
+					delete(s.serverInfoSet, string(kv.Key))
+					s.update()
 
+				}
+			}(e)
 		// close
 		case <-s.closeCh:
+			s.logger.Infof(context.Background(), "listen close channel stop keepAlive listen prefix:%s", prefix)
 			return
 		}
 	}
 }
 
-func (s *grpcResolverBuilder) updateServerInfoList(serverInfoList []*instance.ServerInfo) {
-	s.rwMutex.Lock()
-	defer s.rwMutex.Unlock()
-	s.serverInfoList = serverInfoList
-}
-
-func (s *grpcResolverBuilder) listServerInfo() []*instance.ServerInfo {
-	s.rwMutex.RLock()
-	defer s.rwMutex.RUnlock()
-	return s.serverInfoList
-}
-
 func (s *grpcResolverBuilder) updateState() {
 	state := resolver.State{}
-	address := make([]resolver.Address, 0, len(s.serverInfoList))
-	serverInfoList := s.listServerInfo()
+	address := make([]resolver.Address, 0, len(s.serverInfoSet))
+	serverInfoList := s.serverInfoSet
 	for _, serverInfo := range serverInfoList {
-		a := attributes.New()
-		for k, v := range serverInfo.MateData {
-			a.WithValues(k, v)
-		}
-		address = append(address, resolver.Address{
-			Addr:       serverInfo.FullAddress(),
-			ServerName: s.serverName,
-			Attributes: a,
-		})
+		addr := instance.BuilderAddress(serverInfo)
+		address = append(address, addr)
 	}
 	state.Addresses = address
+	s.logger.Infof(context.Background(), "update state :%+v", address)
 	s.cc.UpdateState(state)
 }
 
-func (s *grpcResolverBuilder) update(serverInfoList []*instance.ServerInfo) {
-	s.updateServerInfoList(serverInfoList)
+func (s *grpcResolverBuilder) update() {
 	s.updateState()
 }

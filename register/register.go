@@ -44,10 +44,10 @@ func NewRegister(logger log.ILogger, opts ...options.GrpcOption) (*Register, err
 
 func (r *Register) Register(info *instance.ServerInfo) error {
 
-	if info.Addr == "" {
-		info.Addr = getLocalIpAddr()
+	if info.Ip == "" {
+		info.Ip = getLocalIpAddr()
 	}
-	if info.Addr == "" || info.Port == 0 {
+	if info.Ip == "" || info.Port == 0 {
 		return errors.New("register info must not empty")
 	}
 	r.serverInfo = info
@@ -70,13 +70,14 @@ func (r *Register) Unregister() error {
 		r.logger.Errorf(context.Background(), "unregister server failed info:%+v, err:%s", r.serverInfo, err)
 		return err
 	}
+	r.logger.Infof(context.Background(), "unregister success serverInfo:%+v", r.serverInfo)
 	return nil
 }
 
 func (r *Register) register(info *instance.ServerInfo) error {
 	info.Key = info.BuildPath()
 	jsonInfo, _ := json.Marshal(info)
-	if _, err := r.etcdClient.PutKey(info.BuildPath(), string(jsonInfo), r.option.KeepAliveTtl()); err != nil {
+	if _, err := r.etcdClient.PutKey(info.BuildPath(), string(jsonInfo), r.option.LeaseTimestamp()); err != nil {
 		r.logger.Errorf(context.Background(), "server register failed serverInfo:%+v, err:%s", info, err)
 		return err
 	}
@@ -84,23 +85,24 @@ func (r *Register) register(info *instance.ServerInfo) error {
 }
 
 func (r *Register) keepAlive() {
-	timer := time.NewTimer(time.Duration(r.option.KeepAliveTtl()) * time.Second)
 	for {
+		timer := time.NewTimer(time.Duration(r.option.KeepAliveTtl()) * time.Second)
 		select {
 		case <-timer.C:
 			r.logger.Infof(context.Background(), "register keep alive info:%+v", r.serverInfo)
 			r.register(r.serverInfo)
 		case <-r.closeCh:
+			r.logger.Infof(context.Background(), "register listen close channel info:%+v", r.serverInfo)
 			return
 		}
 	}
 }
 
 func getLocalIpAddr() string {
-	addr, _, err := nets.GetLocalMainIP()
+	ip, _, err := nets.GetLocalMainIP()
 	if err != nil {
 		hostname, _ := os.Hostname()
 		return hostname
 	}
-	return addr
+	return ip
 }
