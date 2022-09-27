@@ -60,6 +60,7 @@ func TestVersionWeightBalancerGrpc(t *testing.T) {
 		resp, err := c.SayHello(reqCtx, &pb.HelloRequest{Name: "raven"})
 		if err != nil {
 			defaultLogger.Errorf(context.Background(), "say hello failed %v", err)
+			continue
 		}
 		defaultLogger.Infof(ctx, "grpc request success resp:%s", resp.Message)
 	}
@@ -94,6 +95,7 @@ func TestVersionWeightBalancerGrpcNotFound(t *testing.T) {
 		reqCtx := context.Background()
 		md := metadata.MD{}
 		md[instance.VersionWeightHeader] = []string{string(versionMapStr)}
+		//md["traceId"] = []string{kit_util.GetUuid()}
 		reqCtx = metadata.NewIncomingContext(reqCtx, md)
 
 		resp, err := c.SayHello(reqCtx, &pb.HelloRequest{Name: "raven"})
