@@ -30,8 +30,6 @@ var serverName = "hello-service"
 
 var ctx = context.Background()
 
-var defaultLogger = log.Logger{}
-
 func TestDiscovery(t *testing.T) {
 	// etcd中注册5个服务
 	go newServer(serverName, 1000)
@@ -41,9 +39,9 @@ func TestDiscovery(t *testing.T) {
 	go newServer(serverName, 1004)
 	go newServer(serverName, 1005)
 	time.Sleep(2 * time.Second)
-	disc, err := discovery.NewDiscovery(defaultLogger, registerOption...)
+	disc, err := discovery.NewDiscovery(registerOption...)
 	if err != nil {
-		defaultLogger.Errorf(ctx, "disc err:%s", err)
+		log.Errorf(ctx, "disc err:%s", err)
 	}
 	err = disc.Listen(serverName)
 	if err != nil {
@@ -51,7 +49,7 @@ func TestDiscovery(t *testing.T) {
 	}
 	serverList := disc.ListServerInfo(serverName)
 
-	defaultLogger.Infof(ctx, "disc serverInfo List :%v", serverList)
+	log.Infof(ctx, "disc serverInfo List :%v", serverList)
 	// 进行十次数据请求
 	for i := 0; i < 20; i++ {
 		serverInfo := serverList[i%6]
@@ -66,7 +64,7 @@ func TestDiscovery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("say hello failed %v", err)
 		}
-		defaultLogger.Infof(ctx, "grpc request success resp:%s", resp.Message)
+		log.Infof(ctx, "grpc request success resp:%s", resp.Message)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -74,16 +72,16 @@ func TestDiscovery(t *testing.T) {
 }
 
 func newServer(serverName string, port int) {
-	r, err := register.NewRegister(defaultLogger, registerOption...)
+	r, err := register.NewRegister(registerOption...)
 	if err != nil {
-		defaultLogger.Errorf(ctx, "register failed")
+		log.Errorf(ctx, "register failed")
 		return
 	}
 	defer r.Unregister()
 
 	listen, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
-		defaultLogger.Errorf(ctx, "failed to listen %v", err)
+		log.Errorf(ctx, "failed to listen %v", err)
 		return
 	}
 
@@ -96,12 +94,12 @@ func newServer(serverName string, port int) {
 	}
 
 	if err := r.Register(info); err != nil {
-		defaultLogger.Errorf(ctx, "register failed")
+		log.Errorf(ctx, "register failed")
 		return
 	}
 
 	if err := s.Serve(listen); err != nil {
-		defaultLogger.Errorf(ctx, "failed to server %v", err)
+		log.Errorf(ctx, "failed to server %v", err)
 	}
 }
 
@@ -111,6 +109,6 @@ type server struct {
 
 // SayHello 实现服务的接口 在proto中定义的所有服务都是接口
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	defaultLogger.Infof(ctx, "say hello port:%d", s.Port)
+	log.Infof(ctx, "say hello port:%d", s.Port)
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }

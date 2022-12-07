@@ -8,6 +8,7 @@ package grpc
 import (
 	"context"
 	"encoding/json"
+	"github.com/RavenHuo/go-kit/log"
 	"github.com/RavenHuo/grpc/balancer/version_weight"
 	"github.com/RavenHuo/grpc/instance"
 	"github.com/RavenHuo/grpc/pb"
@@ -25,7 +26,7 @@ import (
 
 func TestVersionWeightBalancerGrpc(t *testing.T) {
 	// 注册服务发现组件
-	grpcResolverBuilder := resolver.MustBuildSimpleBuilder("etcd", defaultLogger, registerOption...)
+	grpcResolverBuilder := resolver.MustBuildSimpleBuilder("etcd", registerOption...)
 	resolver.Register(grpcResolverBuilder)
 
 	// etcd中注册5个服务
@@ -59,16 +60,16 @@ func TestVersionWeightBalancerGrpc(t *testing.T) {
 
 		resp, err := c.SayHello(reqCtx, &pb.HelloRequest{Name: "raven"})
 		if err != nil {
-			defaultLogger.Errorf(context.Background(), "say hello failed %v", err)
+			log.Errorf(context.Background(), "say hello failed %v", err)
 			continue
 		}
-		defaultLogger.Infof(ctx, "grpc request success resp:%s", resp.Message)
+		log.Infof(ctx, "grpc request success resp:%s", resp.Message)
 	}
 }
 
 func TestVersionWeightBalancerGrpcNotFound(t *testing.T) {
 	// 注册服务发现组件
-	grpcResolverBuilder := resolver.MustBuildSimpleBuilder("etcd", defaultLogger, registerOption...)
+	grpcResolverBuilder := resolver.MustBuildSimpleBuilder("etcd", registerOption...)
 	resolver.Register(grpcResolverBuilder)
 
 	// etcd中注册5个服务
@@ -100,27 +101,27 @@ func TestVersionWeightBalancerGrpcNotFound(t *testing.T) {
 
 		resp, err := c.SayHello(reqCtx, &pb.HelloRequest{Name: "raven"})
 		if err != nil {
-			defaultLogger.Errorf(context.Background(), "say hello failed %v", err)
+			log.Errorf(context.Background(), "say hello failed %v", err)
 			if !strings.Contains(err.Error(), version_weight.ErrNoMatchVersionConn.Error()) {
 				t.Fatalf("not found test failed %v", err)
 			}
 			continue
 		}
-		defaultLogger.Infof(ctx, "grpc request success resp:%s", resp.Message)
+		log.Infof(ctx, "grpc request success resp:%s", resp.Message)
 	}
 }
 
 func newServerWithVersion(serverName string, port int, version string) {
-	r, err := register.NewRegister(defaultLogger, registerOption...)
+	r, err := register.NewRegister(registerOption...)
 	if err != nil {
-		defaultLogger.Errorf(ctx, "register failed")
+		log.Errorf(ctx, "register failed")
 		return
 	}
 	defer r.Unregister()
 
 	listen, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
-		defaultLogger.Errorf(ctx, "failed to listen %v", err)
+		log.Errorf(ctx, "failed to listen %v", err)
 		return
 	}
 
@@ -135,12 +136,12 @@ func newServerWithVersion(serverName string, port int, version string) {
 	}
 
 	if err := r.Register(info); err != nil {
-		defaultLogger.Errorf(ctx, "register failed")
+		log.Errorf(ctx, "register failed")
 		return
 	}
 
 	if err := s.Serve(listen); err != nil {
-		defaultLogger.Errorf(ctx, "failed to server %v", err)
+		log.Errorf(ctx, "failed to server %v", err)
 	}
 }
 
@@ -151,6 +152,6 @@ type VersionServer struct {
 
 // SayHello 实现服务的接口 在proto中定义的所有服务都是接口
 func (s *VersionServer) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	defaultLogger.Infof(ctx, "say hello port:%d ,version:%s, reqVersion:%s", s.Port, s.Version, utils.GetGrpcHeader(ctx, instance.VersionWeightHeader))
+	log.Infof(ctx, "say hello port:%d ,version:%s, reqVersion:%s", s.Port, s.Version, utils.GetGrpcHeader(ctx, instance.VersionWeightHeader))
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }

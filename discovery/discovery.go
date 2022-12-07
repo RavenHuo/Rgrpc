@@ -29,18 +29,17 @@ type Discovery struct {
 	logger     log.ILogger
 }
 
-func NewDiscovery(logger log.ILogger, option ...options.GrpcOption) (*Discovery, error) {
+func NewDiscovery(option ...options.GrpcOption) (*Discovery, error) {
 	defaultOptions := options.DefaultRegisterOption(option...)
-	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: defaultOptions.Endpoints()}, logger)
+	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: defaultOptions.Endpoints()})
 	if err != nil {
-		logger.Errorf(context.Background(), "grpc register server init etcd pb endpoints:%+v, err:%s", defaultOptions.Endpoints(), err)
+		log.Errorf(context.Background(), "grpc register server init etcd pb endpoints:%+v, err:%s", defaultOptions.Endpoints(), err)
 		return nil, err
 	}
 	return &Discovery{
 		option:     defaultOptions,
 		serversMap: make(map[string][]*instance.ServerInfo, 0),
 		rwMutex:    sync.RWMutex{},
-		logger:     logger,
 		etcdClient: etcdClient,
 		closeCh:    make(chan struct{}),
 	}, nil

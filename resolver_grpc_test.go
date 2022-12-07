@@ -7,6 +7,7 @@ package grpc
 
 import (
 	"context"
+	"github.com/RavenHuo/go-kit/log"
 	"github.com/RavenHuo/grpc/pb"
 	"github.com/RavenHuo/grpc/resolver"
 	"google.golang.org/grpc"
@@ -17,7 +18,7 @@ import (
 
 func TestResolver(t *testing.T) {
 	// 注册服务发现组件
-	grpcResolverBuilder := resolver.MustBuildSimpleBuilder("etcd", defaultLogger, registerOption...)
+	grpcResolverBuilder := resolver.MustBuildSimpleBuilder("etcd", registerOption...)
 	resolver.Register(grpcResolverBuilder)
 
 	// etcd中注册5个服务
@@ -42,8 +43,8 @@ func TestResolver(t *testing.T) {
 		if err != nil {
 			t.Fatalf("say hello failed %v", err)
 		}
-		defaultLogger.Infof(ctx, "grpc request success resp:%s", resp.Message)
+		log.Infof(ctx, "grpc request success resp:%s", resp.Message)
 		time.Sleep(100 * time.Millisecond)
 	}
-	time.Sleep(30*time.Second)
+	time.Sleep(30 * time.Second)
 }
