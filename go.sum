@@ -9,6 +9,8 @@ github.com/RavenHuo/go-kit v0.0.0-20221206101208-c8c962ff0560 h1:LqU5H2lfjlDnHPI
 github.com/RavenHuo/go-kit v0.0.0-20221206101208-c8c962ff0560/go.mod h1:9EwUk2/vRwUorHt+C9Io2RJvHa+WHYQV/jcY6goX+eQ=
 github.com/RavenHuo/go-kit v0.0.0-20221207025227-fc94166adc6c h1:GfoNxq343+ynMRM4ioTtsmNZv0wn4YOETuQ9jT0pYM4=
 github.com/RavenHuo/go-kit v0.0.0-20221207025227-fc94166adc6c/go.mod h1:9EwUk2/vRwUorHt+C9Io2RJvHa+WHYQV/jcY6goX+eQ=
+github.com/RavenHuo/go-kit v0.0.0-20221207030640-4db6b3fb83fd h1:Thcfc6NfXdxhxBcrN/T05d8cNgziO4IX6/IPpLbec9E=
+github.com/RavenHuo/go-kit v0.0.0-20221207030640-4db6b3fb83fd/go.mod h1:9EwUk2/vRwUorHt+C9Io2RJvHa+WHYQV/jcY6goX+eQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
