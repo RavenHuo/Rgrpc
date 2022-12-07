@@ -22,21 +22,19 @@ import (
 type Register struct {
 	serverInfo *instance.ServerInfo
 	option     *options.GrpcOptions
-	logger     log.ILogger
 	etcdClient *etcd_client.Client
 	closeCh    chan struct{}
 }
 
-func NewRegister(logger log.ILogger, opts ...options.GrpcOption) (*Register, error) {
+func NewRegister(opts ...options.GrpcOption) (*Register, error) {
 	registerOptions := options.DefaultRegisterOption(opts...)
-	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: registerOptions.Endpoints()}, logger)
+	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: registerOptions.Endpoints()})
 	if err != nil {
-		logger.Errorf(context.Background(), "grpc register server init etcd pb endpoints:%+v, err:%s", registerOptions.Endpoints(), err)
+		log.Errorf(context.Background(), "grpc register server init etcd pb endpoints:%+v, err:%s", registerOptions.Endpoints(), err)
 		return nil, err
 	}
 	return &Register{
 		option:     registerOptions,
-		logger:     logger,
 		etcdClient: etcdClient,
 		closeCh:    make(chan struct{}),
 	}, nil
@@ -55,7 +53,7 @@ func (r *Register) Register(info *instance.ServerInfo) error {
 	if err != nil {
 		return err
 	}
-	r.logger.Infof(context.Background(), "register server success  info :%+v ", info)
+	log.Infof(context.Background(), "register server success  info :%+v ", info)
 	go r.keepAlive()
 
 	return nil
@@ -67,10 +65,10 @@ func (r *Register) Unregister() error {
 	}
 	r.closeCh <- struct{}{}
 	if err := r.etcdClient.DeleteKey(r.serverInfo.BuildPath()); err != nil {
-		r.logger.Errorf(context.Background(), "unregister server failed info:%+v, err:%s", r.serverInfo, err)
+		log.Errorf(context.Background(), "unregister server failed info:%+v, err:%s", r.serverInfo, err)
 		return err
 	}
-	r.logger.Infof(context.Background(), "unregister success serverInfo:%+v", r.serverInfo)
+	log.Infof(context.Background(), "unregister success serverInfo:%+v", r.serverInfo)
 	return nil
 }
 
@@ -78,7 +76,7 @@ func (r *Register) register(info *instance.ServerInfo) error {
 	info.Key = info.BuildPath()
 	jsonInfo, _ := json.Marshal(info)
 	if _, err := r.etcdClient.PutKey(info.BuildPath(), string(jsonInfo), r.option.LeaseTimestamp()); err != nil {
-		r.logger.Errorf(context.Background(), "server register failed serverInfo:%+v, err:%s", info, err)
+		log.Errorf(context.Background(), "server register failed serverInfo:%+v, err:%s", info, err)
 		return err
 	}
 	return nil
@@ -89,10 +87,10 @@ func (r *Register) keepAlive() {
 		timer := time.NewTimer(time.Duration(r.option.KeepAliveTtl()) * time.Second)
 		select {
 		case <-timer.C:
-			r.logger.Infof(context.Background(), "register keep alive info:%+v", r.serverInfo)
+			log.Infof(context.Background(), "register keep alive info:%+v", r.serverInfo)
 			r.register(r.serverInfo)
 		case <-r.closeCh:
-			r.logger.Infof(context.Background(), "register listen close channel info:%+v", r.serverInfo)
+			log.Infof(context.Background(), "register listen close channel info:%+v", r.serverInfo)
 			return
 		}
 	}

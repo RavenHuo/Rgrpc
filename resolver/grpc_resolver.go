@@ -41,15 +41,14 @@ func (s *grpcResolverBuilder) Close() {
 	s.closeCh <- struct{}{}
 }
 
-func newSimpleBuilder(schema string, logger log.ILogger, option ...options.GrpcOption) (*grpcResolverBuilder, error) {
+func newSimpleBuilder(schema string, option ...options.GrpcOption) (*grpcResolverBuilder, error) {
 	defaultOptions := options.DefaultRegisterOption(option...)
 	return &grpcResolverBuilder{
 		schema: schema,
 
-		option: defaultOptions,
-		logger: logger,
+		option:  defaultOptions,
 		closeCh: make(chan struct{}),
-		mutex:  sync.Mutex{},
+		mutex:   sync.Mutex{},
 	}, nil
 }
 
@@ -58,7 +57,7 @@ func newSimpleBuilder(schema string, logger log.ILogger, option ...options.GrpcO
 func (s *grpcResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	// 这个EndPoint就是dial的时候etcd:///的(xxx)
 	s.serverName = target.Endpoint
-	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: s.option.Endpoints()}, s.logger)
+	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: s.option.Endpoints()})
 	if err != nil {
 		s.logger.Errorf(context.Background(), "build etcdClient failed err:%s", err)
 		return nil, err
@@ -83,10 +82,10 @@ func (s *grpcResolverBuilder) Scheme() string {
 }
 
 // serverName:需要服务发现的服务名
-func MustBuildSimpleBuilder(schema string, logger log.ILogger, option ...options.GrpcOption) *grpcResolverBuilder {
-	builder, err := newSimpleBuilder(schema, logger, option...)
+func MustBuildSimpleBuilder(schema string, option ...options.GrpcOption) *grpcResolverBuilder {
+	builder, err := newSimpleBuilder(schema, option...)
 	if err != nil {
-		logger.Errorf(context.Background(), "new simpleBuilder err :%s", err)
+		log.Errorf(context.Background(), "new simpleBuilder err :%s", err)
 		panic("new simpleBuilder failed")
 	}
 	return builder
