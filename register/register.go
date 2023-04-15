@@ -14,8 +14,8 @@ import (
 	"github.com/RavenHuo/go-kit/utils/nets"
 	"github.com/RavenHuo/grpc/instance"
 	"github.com/RavenHuo/grpc/options"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"os"
-	"time"
 )
 
 // 服务注册
@@ -49,12 +49,12 @@ func (r *Register) Register(info *instance.ServerInfo) error {
 		return errors.New("register info must not empty")
 	}
 	r.serverInfo = info
-	err := r.register(info)
+	leaseId, err := r.register(info)
 	if err != nil {
 		return err
 	}
 	log.Infof(context.Background(), "register server success  info :%+v ", info)
-	go r.keepAlive()
+	go r.keepAlive(leaseId)
 
 	return nil
 }
@@ -72,23 +72,26 @@ func (r *Register) Unregister() error {
 	return nil
 }
 
-func (r *Register) register(info *instance.ServerInfo) error {
+func (r *Register) register(info *instance.ServerInfo) (int64, error) {
 	info.Key = info.BuildPath()
 	jsonInfo, _ := json.Marshal(info)
-	if _, err := r.etcdClient.PutKey(info.BuildPath(), string(jsonInfo), r.option.LeaseTimestamp()); err != nil {
+	leaseId, err := r.etcdClient.PutKey(info.BuildPath(), string(jsonInfo), r.option.LeaseTimestamp())
+	if err != nil {
 		log.Errorf(context.Background(), "server register failed serverInfo:%+v, err:%s", info, err)
-		return err
+		return 0, err
 	}
-	return nil
+	return leaseId, nil
 }
 
-func (r *Register) keepAlive() {
+func (r *Register) keepAlive(leaseId int64) {
+	keepAliveCh, err := r.etcdClient.GetClient().KeepAlive(context.Background(), clientv3.LeaseID(leaseId))
+	if err != nil {
+		return
+	}
 	for {
-		timer := time.NewTimer(time.Duration(r.option.KeepAliveTtl()) * time.Second)
 		select {
-		case <-timer.C:
+		case <-keepAliveCh:
 			log.Infof(context.Background(), "register keep alive info:%+v", r.serverInfo)
-			r.register(r.serverInfo)
 		case <-r.closeCh:
 			log.Infof(context.Background(), "register listen close channel info:%+v", r.serverInfo)
 			return
