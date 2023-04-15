@@ -31,6 +31,7 @@ var serverName = "hello-service"
 var ctx = context.Background()
 
 func TestDiscovery(t *testing.T) {
+	log.UseLogger(log.BuildTraceLogger())
 	// etcd中注册5个服务
 	go newServer(serverName, 1000)
 	go newServer(serverName, 1001)
