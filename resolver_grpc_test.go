@@ -8,8 +8,8 @@ package grpc
 import (
 	"context"
 	"github.com/RavenHuo/go-kit/log"
-	"github.com/RavenHuo/grpc/pb"
-	"github.com/RavenHuo/grpc/resolver"
+	"github.com/RavenHuo/Rgrpc/pb"
+	"github.com/RavenHuo/Rgrpc/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"testing"

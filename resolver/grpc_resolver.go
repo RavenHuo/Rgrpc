@@ -8,10 +8,10 @@ package resolver
 import (
 	"context"
 	"encoding/json"
+	"github.com/RavenHuo/Rgrpc/instance"
+	"github.com/RavenHuo/Rgrpc/options"
 	"github.com/RavenHuo/go-kit/etcd_client"
 	"github.com/RavenHuo/go-kit/log"
-	"github.com/RavenHuo/grpc/instance"
-	"github.com/RavenHuo/grpc/options"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	"google.golang.org/grpc/resolver"
 	"sync"

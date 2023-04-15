@@ -1,4 +1,4 @@
-module github.com/RavenHuo/grpc
+module github.com/RavenHuo/Rgrpc
 
 go 1.16
 

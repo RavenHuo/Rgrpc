@@ -7,12 +7,12 @@ package grpc
 
 import (
 	"context"
+	"github.com/RavenHuo/Rgrpc/discovery"
+	"github.com/RavenHuo/Rgrpc/instance"
+	"github.com/RavenHuo/Rgrpc/options"
+	"github.com/RavenHuo/Rgrpc/pb"
+	"github.com/RavenHuo/Rgrpc/register"
 	"github.com/RavenHuo/go-kit/log"
-	"github.com/RavenHuo/grpc/discovery"
-	"github.com/RavenHuo/grpc/instance"
-	"github.com/RavenHuo/grpc/options"
-	"github.com/RavenHuo/grpc/pb"
-	"github.com/RavenHuo/grpc/register"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"net"

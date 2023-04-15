@@ -8,8 +8,8 @@ package version_weight
 import (
 	"encoding/json"
 	"errors"
-	"github.com/RavenHuo/grpc/instance"
-	"github.com/RavenHuo/grpc/utils"
+	"github.com/RavenHuo/Rgrpc/instance"
+	"github.com/RavenHuo/Rgrpc/utils"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"sync"
