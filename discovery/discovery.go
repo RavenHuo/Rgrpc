@@ -26,7 +26,6 @@ type Discovery struct {
 	rwMutex    sync.RWMutex
 	closeCh    chan struct{}
 	etcdClient *etcd_client.Client
-	logger     log.ILogger
 }
 
 func NewDiscovery(option ...options.GrpcOption) (*Discovery, error) {
@@ -77,7 +76,7 @@ func (d *Discovery) keepAliveListen(serverName string) {
 	prefix := instance.GetServerPrefix(serverName)
 	watchChan, err := d.etcdClient.WatchPrefix(context.Background(), prefix)
 	if err != nil {
-		d.logger.Errorf(context.Background(), "watch %s err:%s", prefix, err)
+		log.Errorf(context.Background(), "watch %s err:%s", prefix, err)
 	}
 
 	for {
@@ -97,7 +96,7 @@ func (d *Discovery) keepAliveListen(serverName string) {
 				var serverInfo instance.ServerInfo
 				err := json.Unmarshal(kv.Value, &serverInfo)
 				if err != nil {
-					d.logger.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+					log.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
 				}
 				serverInfoList = append(serverInfoList, &serverInfo)
 				d.updateServerInfo(serverName, serverInfoList)
@@ -132,7 +131,7 @@ func (d *Discovery) listenServerInfo(serverName string) ([]*instance.ServerInfo,
 		var serverInfo instance.ServerInfo
 		err := json.Unmarshal(v, &serverInfo)
 		if err != nil {
-			d.logger.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, v, err)
+			log.Errorf(context.Background(), "listenServerInfo %s Unmarshal %+v failed err:%s", prefix, v, err)
 		} else {
 			result = append(result, &serverInfo)
 		}

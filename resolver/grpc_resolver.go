@@ -24,7 +24,6 @@ type grpcResolverBuilder struct {
 	schema        string
 	option        *options.GrpcOptions
 	etcdClient    *etcd_client.Client
-	logger        log.ILogger
 	closeCh       chan struct{}
 	cc            resolver.ClientConn
 	serverInfoSet map[string]*instance.ServerInfo
@@ -59,7 +58,7 @@ func (s *grpcResolverBuilder) Build(target resolver.Target, cc resolver.ClientCo
 	s.serverName = target.Endpoint
 	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: s.option.Endpoints()})
 	if err != nil {
-		s.logger.Errorf(context.Background(), "build etcdClient failed err:%s", err)
+		log.Errorf(context.Background(), "build etcdClient failed err:%s", err)
 		return nil, err
 	}
 
@@ -68,7 +67,7 @@ func (s *grpcResolverBuilder) Build(target resolver.Target, cc resolver.ClientCo
 	s.serverInfoSet = make(map[string]*instance.ServerInfo, 0)
 	err = s.listen()
 	if err != nil {
-		s.logger.Errorf(context.Background(), "ResolverBuilder listen failed err:%s", err)
+		log.Errorf(context.Background(), "ResolverBuilder listen failed err:%s", err)
 		return nil, err
 	}
 	// keepAlive heartbeat and watch etcd key
@@ -116,7 +115,7 @@ func (s *grpcResolverBuilder) listenServerInfo() ([]*instance.ServerInfo, error)
 		var serverInfo instance.ServerInfo
 		err := json.Unmarshal(v, &serverInfo)
 		if err != nil {
-			s.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, v, err)
+			log.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, v, err)
 		} else {
 			serverInfo.Key = k
 			result = append(result, &serverInfo)
@@ -129,7 +128,7 @@ func (s *grpcResolverBuilder) keepAliveListen() {
 	prefix := instance.GetServerPrefix(s.serverName)
 	watchChan, err := s.etcdClient.WatchPrefix(context.Background(), prefix)
 	if err != nil {
-		s.logger.Errorf(context.Background(), "watch %s err:%s", prefix, err)
+		log.Errorf(context.Background(), "watch %s err:%s", prefix, err)
 	}
 
 	for {
@@ -145,7 +144,7 @@ func (s *grpcResolverBuilder) keepAliveListen() {
 					var serverInfo instance.ServerInfo
 					err := json.Unmarshal(kv.Value, &serverInfo)
 					if err != nil {
-						s.logger.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
+						log.Errorf(context.Background(), "listen %s Unmarshal %+v failed err:%s", prefix, string(kv.Key), err)
 						return
 					}
 					serverInfoList[string(kv.Key)] = &serverInfo
@@ -159,7 +158,7 @@ func (s *grpcResolverBuilder) keepAliveListen() {
 			}(e)
 		// close
 		case <-s.closeCh:
-			s.logger.Infof(context.Background(), "listen close channel stop keepAlive listen prefix:%s", prefix)
+			log.Infof(context.Background(), "listen close channel stop keepAlive listen prefix:%s", prefix)
 			return
 		}
 	}
@@ -174,7 +173,7 @@ func (s *grpcResolverBuilder) updateState() {
 		address = append(address, addr)
 	}
 	state.Addresses = address
-	s.logger.Infof(context.Background(), "update state :%+v", address)
+	log.Infof(context.Background(), "update state :%+v", address)
 	s.cc.UpdateState(state)
 }
 
