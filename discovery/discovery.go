@@ -21,14 +21,14 @@ import (
 
 // 自己实现的服务发现
 type Discovery struct {
-	option     *options.GrpcOptions
+	option     *options.RegisterOptions
 	serversMap map[string][]*instance.ServerInfo
 	rwMutex    sync.RWMutex
 	closeCh    chan struct{}
 	etcdClient *etcd_client.Client
 }
 
-func NewDiscovery(option ...options.GrpcOption) (*Discovery, error) {
+func NewDiscovery(option ...options.RegisterOption) (*Discovery, error) {
 	defaultOptions := options.DefaultRegisterOption(option...)
 	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: defaultOptions.Endpoints()})
 	if err != nil {

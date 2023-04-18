@@ -1,48 +1,26 @@
 /**
  * @Author raven
  * @Description
- * @Date 2022/8/30
+ * @Date 2023/4/18
  **/
 package options
 
-const (
-	defaultKeepAliveTtl = 10
-)
+import "google.golang.org/grpc"
 
 type GrpcOptions struct {
-	keepAliveTtl int
-	endpoints    []string
-}
-type GrpcOption func(*GrpcOptions)
-
-func WithKeepAliveTtl(ttl int) GrpcOption {
-	return func(o *GrpcOptions) {
-		o.keepAliveTtl = ttl
-	}
+	serverOptions      []grpc.ServerOption
+	streamInterceptors []grpc.StreamServerInterceptor
+	unaryInterceptors  []grpc.UnaryServerInterceptor
 }
 
-func WithEndpoints(endpoints []string) GrpcOption {
-	return func(o *GrpcOptions) {
-		o.endpoints = endpoints
-	}
-}
-func DefaultRegisterOption(ops ...GrpcOption) *GrpcOptions {
-	defaultRegisterOptions := &GrpcOptions{
-		keepAliveTtl: defaultKeepAliveTtl,
-		endpoints:    []string{},
-	}
-	for _, opt := range ops {
-		opt(defaultRegisterOptions)
-	}
-	return defaultRegisterOptions
-}
+type GrpcOption func(options *GrpcOptions)
 
-func (r *GrpcOptions) Endpoints() []string {
-	return r.endpoints
+func (o *GrpcOptions) ServerOptions() []grpc.ServerOption {
+	return o.serverOptions
 }
-func (r *GrpcOptions) KeepAliveTtl() int {
-	return r.keepAliveTtl
+func (o *GrpcOptions) StreamInterceptors() []grpc.StreamServerInterceptor {
+	return o.streamInterceptors
 }
-func (r *GrpcOptions) LeaseTimestamp() int {
-	return 2 * r.keepAliveTtl
+func (o *GrpcOptions) UnaryInterceptors() []grpc.UnaryServerInterceptor {
+	return o.unaryInterceptors
 }

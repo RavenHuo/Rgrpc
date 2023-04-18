@@ -22,7 +22,7 @@ import (
 )
 
 var etcdAddrs = []string{"localhost:2379"}
-var registerOption = []options.GrpcOption{
+var registerOption = []options.RegisterOption{
 	options.WithEndpoints(etcdAddrs),
 	options.WithKeepAliveTtl(10),
 }

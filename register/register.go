@@ -21,12 +21,12 @@ import (
 // 服务注册
 type Register struct {
 	serverInfo *instance.ServerInfo
-	option     *options.GrpcOptions
+	option     *options.RegisterOptions
 	etcdClient *etcd_client.Client
 	closeCh    chan struct{}
 }
 
-func NewRegister(opts ...options.GrpcOption) (*Register, error) {
+func NewRegister(opts ...options.RegisterOption) (*Register, error) {
 	registerOptions := options.DefaultRegisterOption(opts...)
 	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: registerOptions.Endpoints()})
 	if err != nil {

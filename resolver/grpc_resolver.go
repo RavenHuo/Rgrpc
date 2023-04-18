@@ -22,7 +22,7 @@ type grpcResolverBuilder struct {
 	serverName string
 	// 模式
 	schema        string
-	option        *options.GrpcOptions
+	option        *options.RegisterOptions
 	etcdClient    *etcd_client.Client
 	closeCh       chan struct{}
 	cc            resolver.ClientConn
@@ -40,7 +40,7 @@ func (s *grpcResolverBuilder) Close() {
 	s.closeCh <- struct{}{}
 }
 
-func newSimpleBuilder(schema string, option ...options.GrpcOption) (*grpcResolverBuilder, error) {
+func newSimpleBuilder(schema string, option ...options.RegisterOption) (*grpcResolverBuilder, error) {
 	defaultOptions := options.DefaultRegisterOption(option...)
 	return &grpcResolverBuilder{
 		schema: schema,
@@ -81,7 +81,7 @@ func (s *grpcResolverBuilder) Scheme() string {
 }
 
 // serverName:需要服务发现的服务名
-func MustBuildSimpleBuilder(schema string, option ...options.GrpcOption) *grpcResolverBuilder {
+func MustBuildSimpleBuilder(schema string, option ...options.RegisterOption) *grpcResolverBuilder {
 	builder, err := newSimpleBuilder(schema, option...)
 	if err != nil {
 		log.Errorf(context.Background(), "new simpleBuilder err :%s", err)
