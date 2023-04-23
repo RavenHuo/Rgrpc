@@ -24,7 +24,7 @@ type Server struct {
 	register *register.Register
 }
 
-func BuildGrpcServer(info *instance.ServerInfo, opts []options.GrpcOption, regFunc func(*grpc.Server)) *Server {
+func NewGrpcServer(info *instance.ServerInfo, opts []options.GrpcOption, regFunc func(*grpc.Server)) *Server {
 
 	ctx := context.Background()
 	log.Infof(ctx, "listen at port: %d", info.Port)
