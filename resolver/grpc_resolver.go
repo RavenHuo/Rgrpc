@@ -17,7 +17,7 @@ import (
 	"sync"
 )
 
-type grpcResolverBuilder struct {
+type GrpcResolverBuilder struct {
 	// 服务名
 	serverName string
 	// 模式
@@ -32,17 +32,17 @@ type grpcResolverBuilder struct {
 }
 
 // impl Resolver resolver/resolver.go:248
-func (s *grpcResolverBuilder) ResolveNow(nowOptions resolver.ResolveNowOptions) {
+func (s *GrpcResolverBuilder) ResolveNow(nowOptions resolver.ResolveNowOptions) {
 }
 
 // impl Resolver resolver/resolver.go:248
-func (s *grpcResolverBuilder) Close() {
+func (s *GrpcResolverBuilder) Close() {
 	s.closeCh <- struct{}{}
 }
 
-func newSimpleBuilder(schema string, option ...options.RegisterOption) (*grpcResolverBuilder, error) {
+func newSimpleBuilder(schema string, option ...options.RegisterOption) (*GrpcResolverBuilder, error) {
 	defaultOptions := options.DefaultRegisterOption(option...)
-	return &grpcResolverBuilder{
+	return &GrpcResolverBuilder{
 		schema: schema,
 
 		option:  defaultOptions,
@@ -53,7 +53,7 @@ func newSimpleBuilder(schema string, option ...options.RegisterOption) (*grpcRes
 
 // impl Builder resolver/resolver.go:227
 // grpc服务发现的主方法
-func (s *grpcResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+func (s *GrpcResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	// 这个EndPoint就是dial的时候etcd:///的(xxx)
 	s.serverName = target.Endpoint
 	etcdClient, err := etcd_client.New(&etcd_client.EtcdConfig{Endpoints: s.option.Endpoints()})
@@ -76,12 +76,12 @@ func (s *grpcResolverBuilder) Build(target resolver.Target, cc resolver.ClientCo
 }
 
 // impl Builder resolver/resolver.go:227
-func (s *grpcResolverBuilder) Scheme() string {
+func (s *GrpcResolverBuilder) Scheme() string {
 	return s.schema
 }
 
 // serverName:需要服务发现的服务名
-func MustBuildSimpleBuilder(schema string, option ...options.RegisterOption) *grpcResolverBuilder {
+func MustBuildSimpleBuilder(schema string, option ...options.RegisterOption) *GrpcResolverBuilder {
 	builder, err := newSimpleBuilder(schema, option...)
 	if err != nil {
 		log.Errorf(context.Background(), "new simpleBuilder err :%s", err)
@@ -90,7 +90,7 @@ func MustBuildSimpleBuilder(schema string, option ...options.RegisterOption) *gr
 	return builder
 }
 
-func (s *grpcResolverBuilder) listen() error {
+func (s *GrpcResolverBuilder) listen() error {
 	serverInfoList, err := s.listenServerInfo()
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (s *grpcResolverBuilder) listen() error {
 	return nil
 }
 
-func (s *grpcResolverBuilder) listenServerInfo() ([]*instance.ServerInfo, error) {
+func (s *GrpcResolverBuilder) listenServerInfo() ([]*instance.ServerInfo, error) {
 	prefix := instance.GetServerPrefix(s.serverName)
 	resp, err := s.etcdClient.GetDirectory(context.Background(), prefix)
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *grpcResolverBuilder) listenServerInfo() ([]*instance.ServerInfo, error)
 	return result, nil
 }
 
-func (s *grpcResolverBuilder) keepAliveListen() {
+func (s *GrpcResolverBuilder) keepAliveListen() {
 	prefix := instance.GetServerPrefix(s.serverName)
 	watchChan, err := s.etcdClient.WatchPrefix(context.Background(), prefix)
 	if err != nil {
@@ -164,7 +164,7 @@ func (s *grpcResolverBuilder) keepAliveListen() {
 	}
 }
 
-func (s *grpcResolverBuilder) updateState() {
+func (s *GrpcResolverBuilder) updateState() {
 	state := resolver.State{}
 	address := make([]resolver.Address, 0, len(s.serverInfoSet))
 	serverInfoList := s.serverInfoSet
@@ -177,6 +177,6 @@ func (s *grpcResolverBuilder) updateState() {
 	s.cc.UpdateState(state)
 }
 
-func (s *grpcResolverBuilder) update() {
+func (s *GrpcResolverBuilder) update() {
 	s.updateState()
 }

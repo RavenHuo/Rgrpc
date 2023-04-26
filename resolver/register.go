@@ -8,6 +8,6 @@ package resolver
 import "google.golang.org/grpc/resolver"
 
 // 注册服务发现组件
-func Register(s *grpcResolverBuilder) {
+func Register(s *GrpcResolverBuilder) {
 	resolver.Register(s)
 }
