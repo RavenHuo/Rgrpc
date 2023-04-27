@@ -36,7 +36,10 @@ func TestNewConn(t *testing.T) {
 
 	// 进行十次数据请求
 	for i := 0; i < 20; i++ {
-		resp, err := pb.NewGreeterClient(grcConn).SayHello(context.Background(), &pb.HelloRequest{Name: "raven"})
+		contextBackground, cancel := options.GrpcTimeoutCtx(context.Background())
+		defer cancel()
+		grpcCallOptions := options.GrpcCallOption()
+		resp, err := pb.NewGreeterClient(grcConn).SayHello(contextBackground, &pb.HelloRequest{Name: "raven"}, grpcCallOptions...)
 		if err != nil {
 			t.Fatalf("say hello failed %v", err)
 		}

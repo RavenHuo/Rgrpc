@@ -6,6 +6,7 @@
 package options
 
 import (
+	"context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/codes"
@@ -18,12 +19,6 @@ const (
 )
 
 type CallOption func(*CallOptions)
-
-func WithGRPCCallOption(calls ...grpc.CallOption) CallOption {
-	return func(o *CallOptions) {
-		o.callOptions = append(o.callOptions, calls...)
-	}
-}
 
 func WithTimeout(timeout time.Duration) CallOption {
 	return func(o *CallOptions) {
@@ -59,7 +54,6 @@ func DefaultCallOptions() *CallOptions {
 	opts := &CallOptions{}
 	opts.timeout = defaultTimeout * time.Second
 	opts.dialTimeout = defaultTimeout * time.Second
-	opts.callOptions = make([]grpc.CallOption, 0)
 	interceptors := make([]grpc.UnaryClientInterceptor, 0)
 	opts.interceptors = interceptors
 	opts.retryTimes = 3
@@ -71,7 +65,6 @@ func DefaultCallOptions() *CallOptions {
 }
 
 type CallOptions struct {
-	callOptions []grpc.CallOption
 	// 调用超时时间
 	timeout time.Duration
 	// grpc链接的超时时间
@@ -99,7 +92,9 @@ func (o *CallOptions) DialTimeout() time.Duration {
 }
 
 func (o *CallOptions) GrpcCallOption() []grpc.CallOption {
-	return o.callOptions
+	grpcCallOption := make([]grpc.CallOption, 0)
+	grpcCallOption = append(grpcCallOption, grpc.UseCompressor(o.compressor))
+	return grpcCallOption
 }
 
 func (o *CallOptions) Interceptors() []grpc.UnaryClientInterceptor {
@@ -128,13 +123,13 @@ func (o *CallOptions) Compressor() string {
 	return o.compressor
 }
 
-func CallOptionsWith(options ...CallOption) *CallOptions {
-	ops := &CallOptions{
-		callOptions: make([]grpc.CallOption, 0),
-		timeout:     time.Second * 10,
-	}
-	for _, o := range options {
-		o(ops)
-	}
-	return ops
+func GrpcCallOption(opts ...grpc.CallOption) []grpc.CallOption {
+	ops := DefaultCallOptions().GrpcCallOption()
+	ops = append(ops, opts...)
+	return opts
+}
+
+func GrpcTimeoutCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	timeout := DefaultCallOptions().Timeout()
+	return context.WithTimeout(ctx, timeout)
 }
