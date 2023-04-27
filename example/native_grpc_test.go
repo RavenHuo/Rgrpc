@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-var etcdAddrs = []string{"localhost:2379"}
+var etcdAddrs = []string{"118.89.52.205:2379"}
 var registerOption = []options.RegisterOption{
 	options.WithEndpoints(etcdAddrs),
 	options.WithKeepAliveTtl(10),

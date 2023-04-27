@@ -6,10 +6,10 @@
 package options
 
 import (
-	"context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/encoding/gzip"
 	"time"
 )
 
@@ -31,12 +31,6 @@ func WithTimeout(timeout time.Duration) CallOption {
 	}
 }
 
-func WithContext(ctx context.Context) CallOption {
-	return func(o *CallOptions) {
-		o.ctx = ctx
-	}
-}
-
 func WithIntercept(interceptors []grpc.UnaryClientInterceptor) CallOption {
 	return func(o *CallOptions) {
 		o.interceptors = append(o.interceptors, interceptors...)
@@ -49,9 +43,22 @@ func WithServiceName(serviceName string) CallOption {
 	}
 }
 
+func WithDialTimeout(dialTimeout time.Duration) CallOption {
+	return func(options *CallOptions) {
+		options.dialTimeout = dialTimeout
+	}
+}
+
+func WithCompressor(compressor string) CallOption {
+	return func(options *CallOptions) {
+		options.compressor = compressor
+	}
+}
+
 func DefaultCallOptions() *CallOptions {
 	opts := &CallOptions{}
-	opts.timeout = defaultTimeout
+	opts.timeout = defaultTimeout * time.Second
+	opts.dialTimeout = defaultTimeout * time.Second
 	opts.callOptions = make([]grpc.CallOption, 0)
 	interceptors := make([]grpc.UnaryClientInterceptor, 0)
 	opts.interceptors = interceptors
@@ -59,39 +66,40 @@ func DefaultCallOptions() *CallOptions {
 	opts.retryCode = []codes.Code{codes.Unavailable}
 	opts.keepalive = 1
 	opts.balanceName = roundrobin.Name
+	opts.compressor = gzip.Name
 	return opts
 }
 
 type CallOptions struct {
-	callOptions  []grpc.CallOption
-	timeout      time.Duration
-	ctx          context.Context
+	callOptions []grpc.CallOption
+	// 调用超时时间
+	timeout time.Duration
+	// grpc链接的超时时间
+	dialTimeout  time.Duration
 	interceptors []grpc.UnaryClientInterceptor
-	conn         *grpc.ClientConn
-	serviceName  string
-	retryTimes   int32
-	retryCode    []codes.Code
-	keepalive    int32
-	balanceName  string
+	// 需要调用的服务名
+	serviceName string
+	// 重试次数
+	retryTimes int32
+	// 重试的code
+	retryCode []codes.Code
+	// grpc keepalive的时间
+	keepalive int32
+	// 负载均衡策略
+	balanceName string
+	// 压缩传输算法
+	compressor string
 }
 
 func (o *CallOptions) Timeout() time.Duration {
 	return o.timeout
 }
+func (o *CallOptions) DialTimeout() time.Duration {
+	return o.dialTimeout
+}
 
 func (o *CallOptions) GrpcCallOption() []grpc.CallOption {
 	return o.callOptions
-}
-
-func (o *CallOptions) Context() (context.Context, context.CancelFunc) {
-	var ctx context.Context
-	var cancel context.CancelFunc
-	if o.ParentContext() != nil {
-		ctx, cancel = context.WithTimeout(o.ParentContext(), o.Timeout())
-	} else {
-		ctx, cancel = context.WithTimeout(context.Background(), o.Timeout())
-	}
-	return ctx, cancel
 }
 
 func (o *CallOptions) Interceptors() []grpc.UnaryClientInterceptor {
@@ -108,16 +116,16 @@ func (o *CallOptions) RetryCodes() []codes.Code {
 	return o.retryCode
 }
 
-func (o *CallOptions) ParentContext() context.Context {
-	return o.ctx
-}
-
 func (o *CallOptions) Keepalive() int32 {
 	return o.keepalive
 }
 
 func (o *CallOptions) BalanceName() string {
 	return o.balanceName
+}
+
+func (o *CallOptions) Compressor() string {
+	return o.compressor
 }
 
 func CallOptionsWith(options ...CallOption) *CallOptions {
